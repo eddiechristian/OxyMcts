@@ -58,14 +58,17 @@ pub fn get_game_result(state: &str)-> Option<GameResult> {
                     }
                   
                 }
-                let game_result=  {
-                    if fen_record.player == 'b' {
-                        GameResult::WhiteWins
-                    }else {
-                        GameResult::BlackWins
-                    }
-                };
-                return Some(game_result);
+                if all_moves_still_result_in_check {
+                    let game_result=  {
+                        if fen_record.player == 'b' {
+                            GameResult::WhiteWins
+                        }else {
+                            GameResult::BlackWins
+                        }
+                    };
+                    return Some(game_result);
+                }
+              
             }
         }
         return None
