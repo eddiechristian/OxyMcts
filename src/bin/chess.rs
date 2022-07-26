@@ -1,6 +1,6 @@
 use oxymcts::GameTrait;
 
-use oxymcts::chess::chess::{Player, FEN_INITIAL_STATE,get_legal_moves, game_move_piece};
+use oxymcts::chess::chess::{Player, FEN_INITIAL_STATE,get_legal_moves, game_move_piece, get_game_result};
 
 use std::fmt::{Display, Formatter, self};
 use std::{collections::HashMap};
@@ -33,10 +33,10 @@ struct ChessMCTS {
 }
 
 impl ChessMCTS {
-    fn new() -> Self {
+    fn new(state: &str) -> Self {
         ChessMCTS {
             turn: Player::White,
-            fen_string: FEN_INITIAL_STATE.to_owned(),
+            fen_string: state.to_owned(),
         }
     }
 
@@ -110,13 +110,13 @@ impl Display for ChessMCTS {
                         row -=1;
                     },
                     '8' => {write!(f, "┃   ┃   ┃   ┃   ┃   ┃   ┃   ┃   ")?;}, 
-                    '7' => {write!(f, "┃  ┃  ┃  ┃  ┃  ┃  ┃  ")?;}, 
-                    '6' => {write!(f, "┃  ┃  ┃  ┃  ┃  ┃  ")?;}, 
-                    '5' => {write!(f, "┃  ┃  ┃  ┃  ┃  ")?;}, 
-                    '4' => {write!(f, "┃  ┃  ┃  ┃  ")?;}, 
-                    '3' => {write!(f, "┃  ┃  ┃  ")?;}, 
-                    '2' => {write!(f, "┃  ┃  ")?;}, 
-                    '1' => {write!(f, "┃  ")?;},
+                    '7' => {write!(f, "┃   ┃   ┃   ┃   ┃   ┃   ┃   ")?;}, 
+                    '6' => {write!(f, "┃   ┃   ┃   ┃   ┃   ┃   ")?;}, 
+                    '5' => {write!(f, "┃   ┃   ┃   ┃   ┃   ")?;}, 
+                    '4' => {write!(f, "┃   ┃   ┃   ┃   ")?;}, 
+                    '3' => {write!(f, "┃   ┃   ┃   ")?;}, 
+                    '2' => {write!(f, "┃   ┃   ")?;}, 
+                    '1' => {write!(f, "┃   ")?;},
                     'P' => { write!(f, "┃ {} ", WHITE_PAWN)?; },
                     'R' => { write!(f, "┃ {} ", WHITE_ROOK)?; },
                     'N' => { write!(f, "┃ {} ", WHITE_KNIGHT)?; },
@@ -139,6 +139,8 @@ impl Display for ChessMCTS {
 }
 
 fn main() {
-    let chess = ChessMCTS::new();
+    let chess = ChessMCTS::new("8/2Q5/k7/6B1/1P6/p1NP4/P1P3BP/R3K1NR b KQ - 5 45");
     println!("{}", chess);
+    let x = get_game_result("8/2Q5/k7/6B1/1P6/p1NP4/P1P3BP/R3K1NR b KQ - 5 45");
+    println!("{:?}", x);
 }

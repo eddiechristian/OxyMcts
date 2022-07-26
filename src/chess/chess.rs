@@ -16,6 +16,55 @@ pub(crate) const INIT: Option<Piece> = None;
 
 pub const FEN_INITIAL_STATE: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0";
 
+pub fn get_game_result(state: &str)-> Option<GameResult> {
+    let mut chess = Chess::from(&FenRecord::from(&state.to_owned()));
+    let fen_record: FenRecord = FenRecord::from(&chess);
+    let valid_moves = chess.get_legal_moves().unwrap();
+    if valid_moves.is_empty() {
+        //determine if opoosing player can attack king, if not stalemate
+        //replace player in current fen_string to determine if it can attack king.
+        let mut fen_record = FenRecord::from(&state.to_owned());
+        fen_record.player = {
+            match fen_record.player {
+                'w'=> 'b',
+                'b'=> 'w',
+                _ => panic!()
+            }
+        };
+        let mut chess_opposing = Chess::from(&fen_record);
+        let opposing_valid_moves = chess_opposing.get_legal_moves().unwrap();
+        for (cloned_from_spot, cloned_to_spots) in opposing_valid_moves {
+            for cloned_to_spot in cloned_to_spots {
+                let cloned_move = format!("{}{}",cloned_from_spot,cloned_to_spot );
+                //only care about moves that attack opposing king
+                let cloned_to_spot_index = chess_notation::notation_to_index(&cloned_to_spot).unwrap();
+                if let Some(piece) = &chess_opposing.state.st[cloned_to_spot_index] {
+                    if piece.get_player() != chess_opposing.player  {
+                        if piece.piece_type == PieceType::BlackKing || piece.piece_type == PieceType::WhiteKing {
+                            if chess_opposing.is_move_valid(&cloned_from_spot, &cloned_to_spot , None).is_ok(){ 
+                                let game_result= match chess_opposing.player {
+                                    Player::Black => GameResult::BlackWins,
+                                    Player::White => GameResult::WhiteWins,
+                                };
+                                return Some(game_result)
+                            }
+                            
+                        }
+                    }
+                }
+            }
+        }
+        Some(GameResult::Stalemate)
+    }else {
+        //determin if 50 move rule is broken, else return none
+        if fen_record.halfmove_clock > 50 {
+            return Some(GameResult::Stalemate)
+        }else {
+            return None
+        }
+        
+    }
+}
 
 ///
 /// 
@@ -36,6 +85,7 @@ pub fn game_move_piece( state: &str ,chess_move: &str) -> (String, WebGame, Hash
     let valid_moves = chess.get_legal_moves().unwrap();
     return (FenRecord::from(&chess).to_string(), WebGame::from(&chess), valid_moves);
 }
+
 
 #[derive(Debug,Clone, PartialEq, Eq)]
 pub enum Player {
@@ -575,9 +625,6 @@ impl Chess {
            }
            self.full_move_number += 1;
            self.halfmove_clock += 1;
-           if self.halfmove_clock > 51 {
-            *self.game_over.borrow_mut() = Some(GameResult::Stalemate);
-           }
            
         } else {
             let msg = format!("Invalid notation");
@@ -627,15 +674,6 @@ impl Chess {
             }
             
        }
-        if legal_moves_map.is_empty() {
-            let winner = match self.player{
-                Player::White => GameResult::BlackWins,
-                Player::Black => GameResult::WhiteWins,
-
-            };
-            println!("Game Over! Winner {:?}", winner);
-            *self.game_over.borrow_mut() = Some(winner);
-        }
         Ok(legal_moves_map)
     }
 

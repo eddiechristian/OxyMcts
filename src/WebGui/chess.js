@@ -18,7 +18,7 @@ const colorArray = ["#774C3B","#C99468","#774C3B","#C99468","#774C3B","#C99468",
 const fen_initial_state= "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0";
 
 var starterPosition;
-var current_fen_state = fen_initial_state
+var current_fen_state = "8/2Q5/k7/6B1/1P6/p1NP4/P1P3BP/R3K1NR b KQ - 5 45"
 
 var from_spot;
 
