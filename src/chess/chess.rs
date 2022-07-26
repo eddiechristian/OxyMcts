@@ -23,46 +23,51 @@ pub fn get_game_result(state: &str)-> Option<GameResult> {
     if valid_moves.is_empty() {
         //determine if opoosing player can attack king, if not stalemate
         //replace player in current fen_string to determine if it can attack king.
-        let mut fen_record = FenRecord::from(&state.to_owned());
-        fen_record.player = {
-            match fen_record.player {
-                'w'=> 'b',
-                'b'=> 'w',
-                _ => panic!()
-            }
-        };
-        let mut chess_opposing = Chess::from(&fen_record);
-        let opposing_valid_moves = chess_opposing.get_legal_moves().unwrap();
-        for (cloned_from_spot, cloned_to_spots) in opposing_valid_moves {
-            for cloned_to_spot in cloned_to_spots {
-                let cloned_move = format!("{}{}",cloned_from_spot,cloned_to_spot );
-                //only care about moves that attack opposing king
-                let cloned_to_spot_index = chess_notation::notation_to_index(&cloned_to_spot).unwrap();
-                if let Some(piece) = &chess_opposing.state.st[cloned_to_spot_index] {
-                    if piece.get_player() != chess_opposing.player  {
-                        if piece.piece_type == PieceType::BlackKing || piece.piece_type == PieceType::WhiteKing {
-                            if chess_opposing.is_move_valid(&cloned_from_spot, &cloned_to_spot , None).is_ok(){ 
-                                let game_result= match chess_opposing.player {
-                                    Player::Black => GameResult::BlackWins,
-                                    Player::White => GameResult::WhiteWins,
-                                };
-                                return Some(game_result)
-                            }
-                            
-                        }
-                    }
+        if Chess::can_opposing_player_attack_king(state){
+            let game_result=  {
+                if fen_record.player == 'b' {
+                    GameResult::WhiteWins
+                }else {
+                    GameResult::BlackWins
                 }
-            }
+            };
+            Some(game_result)
+        }else {
+            Some(GameResult::Stalemate)
         }
-        Some(GameResult::Stalemate)
     }else {
-        //determin if 50 move rule is broken, else return none
+        //determine if 50 move rule is broken, else return none
         if fen_record.halfmove_clock > 50 {
             return Some(GameResult::Stalemate)
         }else {
-            return None
+            //determine if we are in check
+            //if so do any moves get us out of check, else game over 
+            if Chess::can_opposing_player_attack_king(state){
+                let valid_moves = chess.get_legal_moves().unwrap();
+                let mut all_moves_still_result_in_check = true;
+                for (from_spot, to_spots) in valid_moves{
+                    for to_spot in to_spots {
+                        let mut cloned_game = chess.clone();
+                        let this_move = format!("{}{}",from_spot,to_spot );
+                        Chess::check_for_check(&mut cloned_game, &this_move);
+                        let cloned_fen_record: FenRecord = FenRecord::from(&cloned_game);
+                        if Chess::can_opposing_player_attack_king(&cloned_fen_record.to_string())== false{
+                            all_moves_still_result_in_check =false
+                        }
+                    }
+                  
+                }
+                let game_result=  {
+                    if fen_record.player == 'b' {
+                        GameResult::WhiteWins
+                    }else {
+                        GameResult::BlackWins
+                    }
+                };
+                return Some(game_result);
+            }
         }
-        
+        return None
     }
 }
 
@@ -632,6 +637,38 @@ impl Chess {
         }
     
         Ok(())
+    }
+
+    pub fn can_opposing_player_attack_king(current_state: &str) -> bool {
+        let mut fen_record = FenRecord::from(&current_state.to_owned());
+        fen_record.player = {
+            match fen_record.player {
+                'w'=> 'b',
+                'b'=> 'w',
+                _ => panic!()
+            }
+        };
+        let mut chess_opposing = Chess::from(&fen_record);
+        let opposing_valid_moves = chess_opposing.get_legal_moves().unwrap();
+        for (cloned_from_spot, cloned_to_spots) in opposing_valid_moves {
+            for cloned_to_spot in cloned_to_spots {
+                let cloned_move = format!("{}{}",cloned_from_spot,cloned_to_spot );
+                //only care about moves that attack opposing king
+                let cloned_to_spot_index = chess_notation::notation_to_index(&cloned_to_spot).unwrap();
+                if let Some(piece) = &chess_opposing.state.st[cloned_to_spot_index] {
+                    if piece.get_player() != chess_opposing.player  {
+                        if piece.piece_type == PieceType::BlackKing || piece.piece_type == PieceType::WhiteKing {
+                            if chess_opposing.is_move_valid(&cloned_from_spot, &cloned_to_spot , None).is_ok(){ 
+                                    return true;
+                            }
+                            
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+
     }
 
     pub fn get_legal_moves(&self) -> Result<HashMap<String, Vec<String>>, chess_errors::ChessErrors>{

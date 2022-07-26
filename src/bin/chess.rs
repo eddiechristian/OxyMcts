@@ -30,7 +30,7 @@ pub static MIDDLE_BORDER:  &'static str = "┣━━━╋━━━╋━━━�
 pub static BOTTOM_BORDER:  &'static str = "┗━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┛";
 
 #[derive(Debug, Clone, Default)]
-struct ChessMCTS {
+pub struct ChessMCTS {
     turn: u8, // 1= white , 2= black
     fen_string: String,
 }
@@ -171,13 +171,13 @@ fn main() {
         let move_random = dbg!(random_agent(&chess));
         chess.play(move_random);
         println!("{}", chess);
-        io::stdin().read_line(&mut buffer).unwrap();
+        //io::stdin().read_line(&mut buffer).unwrap();
         if !chess.is_final() {
             println!("Mcts turn: ");
-            let move_mcts = dbg!(mcts_uct_agent(&chess, 30, f64::SQRT_2()));
+            let move_mcts = dbg!(mcts_uct_agent(&chess, 300, f64::SQRT_2()));
             chess.play(move_mcts);
             println!("{}", chess);
-            io::stdin().read_line(&mut buffer).unwrap();
+            //io::stdin().read_line(&mut buffer).unwrap();
         }
     }
 
