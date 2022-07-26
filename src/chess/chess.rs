@@ -42,6 +42,10 @@ pub enum Player {
     White,
     Black
 }
+impl Default for Player {
+    fn default() -> Self { Player::White }
+}
+
 #[derive(Debug)]
 pub enum Direction {
     Up,
