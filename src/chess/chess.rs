@@ -1,7 +1,7 @@
 use core::num;
-use std::{collections::HashMap, convert::{From, TryInto}, fmt::format, cell::RefCell};
-
-
+use std::{collections::HashMap, convert::{From, TryInto}, fmt::format, cell::RefCell, fs::OpenOptions};
+use std::io::prelude::*;
+use tracing::{debug, error, info, span, warn, Level};
 use serde::{Deserialize, Serialize};
 
 use crate::chess::{ king::get_king_unvalidated_moves};
@@ -16,6 +16,7 @@ pub(crate) const INIT: Option<Piece> = None;
 
 pub const FEN_INITIAL_STATE: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0";
 
+#[tracing::instrument]
 pub fn get_game_result(state: &str)-> Option<GameResult> {
     let mut chess = Chess::from(&FenRecord::from(&state.to_owned()));
     let fen_record: FenRecord = FenRecord::from(&chess);
@@ -73,16 +74,18 @@ pub fn get_game_result(state: &str)-> Option<GameResult> {
 
 ///
 /// 
+#[tracing::instrument]
 pub fn get_legal_moves(
     state: &str,
 ) -> (HashMap<String,Vec<String>>, WebGame) {
     let mut chess = Chess::from(&FenRecord::from(&state.to_owned()));
     let fen_record: FenRecord = FenRecord::from(&chess);
     let valid_moves = chess.get_legal_moves().unwrap();
-    println!("fen_record {}", fen_record);
+    debug!("{}",fen_record);
     let web_game:WebGame = WebGame::from(&chess);
     (valid_moves,web_game)
 }
+
 
 pub fn game_move_piece( state: &str ,chess_move: &str) -> (String, WebGame, HashMap<String,Vec<String>>) {
     let mut chess = Chess::from(&FenRecord::from(&state.to_owned()));

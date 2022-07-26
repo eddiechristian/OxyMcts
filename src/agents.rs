@@ -1,11 +1,13 @@
 use crate::{DefaultMcts, GameTrait};
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
+use tracing::debug;
 
-pub fn mcts_uct_agent<Game: GameTrait>(state: &Game, playouts: usize, c: f64) -> Game::Move {
+#[tracing::instrument]
+pub fn mcts_uct_agent<Game: GameTrait + std::fmt::Debug >(state: &Game, playouts: usize, c: f64) -> Game::Move {
     let mut mcts = DefaultMcts::new(state);
     for i in 0..playouts {
-        println!("playout number: {:?}",i);
+        debug!("playout number: {:?}",i);
         mcts.execute(&c, ());
     }
     mcts.best_move(&c)

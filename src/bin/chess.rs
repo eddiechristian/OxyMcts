@@ -3,6 +3,7 @@ use oxymcts::{GameTrait, random_agent, mcts_uct_agent};
 use oxymcts::chess::chess::{Player, FEN_INITIAL_STATE,get_legal_moves, game_move_piece, get_game_result, GameResult};
 use oxymcts::chess::fen::FenRecord;
 
+use tracing::{info, Level};
 use num_traits::FloatConst;
 use std::fmt::{Display, Formatter, self};
 use std::io;
@@ -162,6 +163,17 @@ impl Display for ChessMCTS {
 }
 
 fn main() {
+    let file_appender = tracing_appender::rolling::hourly("/Users/edwardchristian/source/rust_play/OxyMcts/logs", "prefix.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+   tracing_subscriber::fmt()
+        .event_format(tracing_subscriber::fmt::format::format().pretty())
+        .with_max_level(Level::TRACE)
+        .with_file(true)
+        .with_line_number(true)
+        .with_thread_ids(true)
+       .with_writer(non_blocking)
+       .init();
+
     println!("Player 1: White (Random bot)");
     println!("Player 2: Black (MCTS)");
     let mut buffer = String::new();
@@ -174,7 +186,7 @@ fn main() {
         //io::stdin().read_line(&mut buffer).unwrap();
         if !chess.is_final() {
             println!("Mcts turn: ");
-            let move_mcts = dbg!(mcts_uct_agent(&chess, 300, f64::SQRT_2()));
+            let move_mcts = dbg!(mcts_uct_agent(&chess, 10, f64::SQRT_2()));
             chess.play(move_mcts);
             println!("{}", chess);
             //io::stdin().read_line(&mut buffer).unwrap();
