@@ -1,0 +1,42 @@
+body {
+    font-family: 'Source Sans Pro', sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  svg {
+    width: 90vw;
+    height: auto;
+  }
+  
+  svg line {
+    stroke-width: 5.5;
+    stroke: red;
+  }
+  
+  .valid_moves {
+    stroke-width: 5;
+    stroke: rgb(0, 255, 170);
+    fill:rgb(0, 255, 170);
+    display: none;
+  }
+
+  svg text {
+    fill: red;
+    font-size: 20px;
+    user-select: none;
+    text-anchor: middle;
+  }
+  
+  .static {
+    cursor: not-allowed;
+  }
+  
+  .draggable {
+    cursor: move;
+  }
+
