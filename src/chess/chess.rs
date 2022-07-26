@@ -37,7 +37,7 @@ pub fn game_move_piece( state: &str ,chess_move: &str) -> (String, WebGame, Hash
     return (FenRecord::from(&chess).to_string(), WebGame::from(&chess), valid_moves);
 }
 
-#[derive(Debug,Clone, PartialEq)]
+#[derive(Debug,Clone, PartialEq, Eq)]
 pub enum Player {
     White,
     Black

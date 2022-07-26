@@ -181,7 +181,6 @@ fn main() {
         }
     }
     println!("Winner: {}", tictactoe.get_winner());
-    //println!("{}", mcts.write_tree());
     let number_of_games = 1000;
     let dimension = 6;
     let c = f64::SQRT_2();
