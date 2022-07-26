@@ -15,7 +15,7 @@ mod mcts_node;
 mod ops;
 mod traits;
 mod tree_search;
-
+mod chess;
 /// This mcts uses UCT, naive simulation applying random moves until a final state, and scoring 1
 /// if the player won.
 pub type DefaultMcts<'a, State> = LazyMcts<
