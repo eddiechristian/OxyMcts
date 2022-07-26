@@ -1,8 +1,11 @@
-use oxymcts::GameTrait;
+use oxymcts::{GameTrait, random_agent, mcts_uct_agent};
 
-use oxymcts::chess::chess::{Player, FEN_INITIAL_STATE,get_legal_moves, game_move_piece, get_game_result};
+use oxymcts::chess::chess::{Player, FEN_INITIAL_STATE,get_legal_moves, game_move_piece, get_game_result, GameResult};
+use oxymcts::chess::fen::FenRecord;
 
+use num_traits::FloatConst;
 use std::fmt::{Display, Formatter, self};
+use std::io;
 use std::{collections::HashMap};
 
 const WHITE_PAWN: char = '\u{2659}';
@@ -28,20 +31,20 @@ pub static BOTTOM_BORDER:  &'static str = "┗━━━┻━━━┻━━━�
 
 #[derive(Debug, Clone, Default)]
 struct ChessMCTS {
-    turn: Player,
+    turn: u8, // 1= white , 2= black
     fen_string: String,
 }
 
 impl ChessMCTS {
     fn new(state: &str) -> Self {
         ChessMCTS {
-            turn: Player::White,
+            turn: 1,
             fen_string: state.to_owned(),
         }
     }
 
-    pub fn get_turn(&self) -> Player {
-        self.turn.clone()
+    pub fn get_turn(&self) -> u8 {
+        self.turn
     }
 
     pub fn legal_moves(&self) -> Vec<String> {
@@ -55,11 +58,24 @@ impl ChessMCTS {
         }
         legal_moves_vec
     }
+    pub fn play(&mut self, chess_move: String) {
+        let (fen_string, _, _) = game_move_piece(&self.fen_string, &chess_move);
+        self.fen_string = fen_string;
+        let fen_record = FenRecord::from(&self.fen_string.to_owned());
+        self.turn = match fen_record.player {
+            'w' => 1,
+            'b' => 2,
+            _   => 0
+        };
+        if self.turn ==0 {
+            panic!()
+        }
+    }
 
 }
 
 impl GameTrait for ChessMCTS {
-    type Player = Player;
+    type Player = u8;
     type Move = String;
 
     fn legals_moves(&self) -> Vec<Self::Move> {
@@ -75,17 +91,24 @@ impl GameTrait for ChessMCTS {
     }
 
     fn is_final(&self) -> bool {
-        self.legal_moves().is_empty()
-        //todo test for 50 move rule
+        get_game_result(&self.fen_string).is_some()
     }
 
     fn do_move(&mut self, m: &Self::Move) {
-        let (fen_string, _, _) = game_move_piece(&self.fen_string, m);
-        self.fen_string = fen_string;
+        self.play(m.clone())
     }
 
     fn get_winner(&self) -> Self::Player {
-        todo!()
+        match get_game_result(&self.fen_string) {
+            Some(game_result) => {
+                match game_result {
+                    GameResult::BlackWins => 2,
+                    GameResult::WhiteWins => 1,
+                    _ => 0
+                }
+            },
+            None => 0
+        }
     }
 }
 
@@ -139,8 +162,27 @@ impl Display for ChessMCTS {
 }
 
 fn main() {
-    let chess = ChessMCTS::new("8/2Q5/k7/6B1/1P6/p1NP4/P1P3BP/R3K1NR b KQ - 5 45");
-    println!("{}", chess);
-    let x = get_game_result("8/2Q5/k7/6B1/1P6/p1NP4/P1P3BP/R3K1NR b KQ - 5 45");
-    println!("{:?}", x);
+    println!("Player 1: White (Random bot)");
+    println!("Player 2: Black (MCTS)");
+    let mut buffer = String::new();
+    let mut chess = ChessMCTS::new(FEN_INITIAL_STATE);
+    while !chess.is_final() {
+        println!("Random turn: ");
+        let move_random = dbg!(random_agent(&chess));
+        chess.play(move_random);
+        println!("{}", chess);
+        io::stdin().read_line(&mut buffer).unwrap();
+        if !chess.is_final() {
+            println!("Mcts turn: ");
+            let move_mcts = dbg!(mcts_uct_agent(&chess, 30, f64::SQRT_2()));
+            chess.play(move_mcts);
+            println!("{}", chess);
+            io::stdin().read_line(&mut buffer).unwrap();
+        }
+    }
+
+    // let chess = ChessMCTS::new("8/2Q5/k7/6B1/1P6/p1NP4/P1P3BP/R3K1NR b KQ - 5 45");
+    // println!("{}", chess);
+    // let x = get_game_result("8/2Q5/k7/6B1/1P6/p1NP4/P1P3BP/R3K1NR b KQ - 5 45");
+    // println!("{:?}", x);
 }

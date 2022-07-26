@@ -3,7 +3,7 @@ use std::fmt;
 
 use super::chess::{Chess, Piece, PieceType, FEN_INITIAL_STATE, INIT, ChessState, Player};
 
-pub(crate) struct FenRecord {
+pub struct FenRecord {
     pub piece_placement_data: String,
     pub player: char,
     pub castling: String,
