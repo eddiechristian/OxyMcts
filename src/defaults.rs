@@ -59,7 +59,7 @@ impl<T: GameTrait> Playout<T> for DefaultPlayout {
 
 /// Explores at least once each child node, before going deeper.
 pub struct DefaultLazyTreePolicy<State: GameTrait, EV: Evaluator<State, Reward, A>, A: Clone +
-Default, Reward: Clone> {
+Default, Reward: Clone> where State: std::fmt::Debug {
     phantom_state: PhantomData<State>,
     phantom_a: PhantomData<A>,
     phantom_ev: PhantomData<EV>,
@@ -70,7 +70,7 @@ impl<State: GameTrait, EV: Evaluator<State, Reward, A, Args=f64>, A: Clone + Def
     Reward: Clone>
 DefaultLazyTreePolicy<State, EV, A, Reward>
     where
-        Reward: Div + ToPrimitive + Add + Zero,
+        Reward: Div + ToPrimitive + Add + Zero, State: std::fmt::Debug
 {
     pub fn select(
         mut tree: &mut LazyMctsTree<State, Reward, A>,
@@ -123,7 +123,7 @@ DefaultLazyTreePolicy<State, EV, A, Reward>
 impl<State, EV, A, Reward>
 LazyTreePolicy<State, EV, A, Reward> for DefaultLazyTreePolicy<State, EV, A, Reward>
     where
-        State: GameTrait,
+        State: GameTrait + std::fmt::Debug ,
         Reward: Clone + Div + Add + ToPrimitive + Zero,
         EV: Evaluator<State, Reward, A, Args=f64>,
         A: Clone + Default
@@ -135,6 +135,7 @@ LazyTreePolicy<State, EV, A, Reward> for DefaultLazyTreePolicy<State, EV, A, Rew
     ) -> (NodeId, State) {
         let master_player = root_state.player_turn();
         let selected_node_id = Self::select(tree, &master_player, evaluator_args);
+        println!("root_state {:?}", root_state);
         Self::expand(tree.get_mut(selected_node_id).unwrap(), root_state)
     }
 

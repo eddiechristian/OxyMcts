@@ -2,6 +2,7 @@ use core::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::ops::{Add, Div};
+use std::thread::{self, JoinHandle};
 
 use ascii_tree::Tree::{Leaf, Node};
 use ascii_tree::{write_tree, Tree};
@@ -9,8 +10,21 @@ use ego_tree::NodeId;
 use num_traits::{ToPrimitive, Zero};
 
 use crate::aliases::{LazyMctsNode, LazyMctsTree};
-use crate::traits::{BackPropPolicy, GameTrait, LazyTreePolicy, Playout};
+use crate::traits::{BackPropPolicy, GameTrait, LazyTreePolicy, Playout, self};
 use crate::Evaluator;
+
+
+lazy_static! {
+    static ref HASHMAP: HashMap<u32, &'static str> = {
+        let mut m = HashMap::new();
+        m.insert(0, "foo");
+        m.insert(1, "bar");
+        m.insert(2, "baz");
+        m
+     };
+    // static ref COUNT: usize = HASHMAP.len();
+    // static ref NUMBER: u32 = times_two(21);
+}
 
 /// This is a special MCTS because it doesn't store the state in the node but instead stores the
 /// historic to the node.
@@ -35,7 +49,7 @@ pub struct LazyMcts<'a, State, TP, PP, BP, EV, AddInfo, Reward>
 
 impl<'a, State, TP, PP, BP, EV, A, R> LazyMcts<'a, State, TP, PP, BP, EV, A, R>
     where
-        State: GameTrait,
+        State: GameTrait + std::fmt::Debug + std::marker::Send,
         TP: LazyTreePolicy<State, EV, A, R>,
         PP: Playout<State>,
         BP: BackPropPolicy<Vec<State::Move>, State::Move, R, A, EV::EvalResult>,
@@ -70,12 +84,36 @@ impl<'a, State, TP, PP, BP, EV, A, R> LazyMcts<'a, State, TP, PP, BP, EV, A, R>
     }
 
     /// Executes one selection, expansion?, simulation, backpropagation.
-    pub fn execute(&mut self, evaluation_args: &EV::Args, playout_args: PP::Args) {
-        let (node_id, state) =
+    pub fn execute(&mut self, evaluation_args: &EV::Args, playout_args: PP::Args) where <EV as traits::Evaluator<State, R, A>>::EvalResult: std::fmt::Debug, <PP as Playout<State>>::Args: Send {
+        
+        let mut tree_policy_states = Vec::new();
+        for i in 0..30 {
+            let (node_id, state) =
             TP::tree_policy(&mut self.tree, self.root_state.clone(), evaluation_args);
-        let final_state = PP::playout(state, playout_args);
-        let eval = EV::evaluate_leaf(final_state, &self.root_state.player_turn());
-        BP::backprop(&mut self.tree, node_id, eval);
+            println!("node_id: {:?} state: {:?}",node_id, state );
+            tree_policy_states.push((node_id, state));
+        } 
+        let mut playout_states = Vec::<JoinHandle<(State, NodeId)>>::new();
+        let mut join_handles = vec![];
+        for state_tup in  tree_policy_states {
+            // join_handles.push(thread::spawn(move || {
+            //     return (PP::playout(state_tup.1.clone(), playout_args),state_tup.0);
+            // }));
+            join_handles.push(thread::spawn({
+                let ss = state_tup.1.clone();
+                move || return (PP::playout(ss, playout_args).clone(),state_tup.0)
+            }));
+        }
+        for child in join_handles {
+            // Wait for the thread to finish. Returns a result.
+            let (final_state, node_id ) = child.join().unwrap();
+            println!("final_state: {:?} ", final_state);
+            let eval = EV::evaluate_leaf(final_state, &self.root_state.player_turn());
+            println!(" eval: {:?} ", eval);
+            BP::backprop(&mut self.tree, node_id, eval);
+        }
+        
+       
     }
 
     /// Returns the best move from the root.
